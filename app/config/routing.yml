@@ -1,9 +1,0 @@
-jp_baseball_card:
-    resource: "@JPBaseballCardBundle/Controller/"
-    type:     annotation
-    prefix:   /
-
-jp_ajax:
-    resource: "@JPAjaxBundle/Controller/"
-    type:     annotation
-    prefix:   /
