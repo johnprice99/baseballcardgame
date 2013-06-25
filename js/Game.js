@@ -1,22 +1,68 @@
 /* Game Object */
+Array.max = function(array){
+    return Math.max.apply(Math, array);
+};
+Array.prototype.sum = function() {
+	return this.reduce(function(a,b){return a+b;});
+};
 
 function Game() {
+	this.gameover = false;
+    
 	this.bases = [0,0,0];
 	this.scores = {
-		'away' : [0,0,0,0,0,0,0,0,0],
-		'home' : [0,0,0,0,0,0,0,0,0]
+		'away' : [0,0],
+		'home' : [0,0]
 	},
 	this.currentInning = 1;
 	this.teamOnOffense = 'away';
 	this.outs = 0;
-	this.pitcherCardValue = 0;
-	this.batterCardValue = 0;
 
-	this.gameover = false;
+	this.homeTeam;
+	this.awayTeam;
+	
+	this.pitcherDeck;
+	this.batterDeck;
+	
+	this.pitcherReady = false;
+	
+	this.pitcherCard = 0;
+	this.batterCard = 0;
+
+    this.pitcherSelections = [];
+    this.batterSelections = [];
 }
 
 Game.prototype = {
 	constructor: Game,
+    playBall: function() { //this will only be run once per game
+        displayMessage('', '==========PLAY BALL!==========');
+        this.homeTeam.deck.shuffleCards();
+        this.awayTeam.deck.shuffleCards();
+        this.loadPitcherCards();
+        this.loadBatterCards(true);
+    },
+	loadPitcherCards: function(loadAllOuts) {
+		this.pitcherSelections = this.pitcherDeck.pickRandomCards(3);
+	},
+    loadBatterCards: function(loadAllOuts) {
+        if (loadAllOuts) {
+            this.batterSelections[0] = this.batterDeck.drawCardsFromTop(5);
+            this.batterSelections[1] = this.batterDeck.drawCardsFromTop(5);
+            this.batterSelections[2] = this.batterDeck.drawCardsFromTop(5);
+        }
+        else {
+            if (this.outs == 0) {
+                this.batterSelections[0] = this.batterDeck.drawCardsFromTop(5);
+            }
+            else if (this.outs == 1) {
+                this.batterSelections[1] = this.batterDeck.drawCardsFromTop(5);
+            }
+            else if (this.outs == 2) {
+                this.batterSelections[2] = this.batterDeck.drawCardsFromTop(5);
+            }
+        }
+    },
 	addRuns: function(number) {
 		var plural = (number === 1) ? '' : 's';
 		displayMessage('event', number + ' run'+plural+' scored');
@@ -36,13 +82,21 @@ Game.prototype = {
 	},
 	moveRunnersUp : function(placesToMove)  {
 		if (typeof placesToMove === 'undefined') { placesToMove = 1; }
+		
+		var runsScoredOnPlay = 0;
 
 		for (c=0;c<placesToMove;c++) {
 			if (this.bases[2] === 1) {
-				this.addRuns(1);
+				runsScoredOnPlay++;
 			}
 			this.bases.pop(); //remove the last element from the array (runner in from third)
 			this.bases.unshift(0); //add no runner at first
+		}
+		if (placesToMove == 4) { //if there was a home run
+			runsScoredOnPlay += 1;
+		}
+		if (runsScoredOnPlay) {
+			this.addRuns(runsScoredOnPlay);
 		}
 	},
 	stealBase: function (base) {
@@ -131,9 +185,15 @@ Game.prototype = {
 	addOut: function() {
 		if (this.outs === 2) {
 			this.changeInning();
-			displayMessage('notice', 'The side is retired.');
 		}
 		else {
+			//move all cards from this out selection into the batter's hand
+			for (i=0;i<this.batterSelections[this.outs].length;i++) {
+				this.batterDeck.addCardToHand(this.batterSelections[this.outs][i]);
+			}
+			//now clear out the array to make sure there is no duplication of cards
+			this.batterSelections[this.outs] = null;
+			
 			this.outs++;
 			var msg = this.outs + ' out';
 			if (this.outs > 1) { msg += 's'; }
@@ -143,6 +203,10 @@ Game.prototype = {
 	changeInning: function() {
 		//check if the game is over
 		var numberOfInnings = this.scores.away.length;
+		
+        //shuffle all player cards for new inning
+        this.homeTeam.deck.shuffleCards();
+        this.awayTeam.deck.shuffleCards();
 
 		switch(this.teamOnOffense) {
 			case 'away':
@@ -151,26 +215,40 @@ Game.prototype = {
 				}
 				else {
 					this.teamOnOffense = 'home';
+					this.batterDeck = this.homeTeam.deck;
+					this.pitcherDeck = this.awayTeam.deck;
 				}
 				break;
 			case 'home':
+				if (this.currentInning == numberOfInnings && this.scores.home.sum() == this.scores.away.sum()) {
+					//the game is tied. lets add another inning to the game
+					this.scores.away.push(0);
+					this.scores.home.push(0);
+					numberOfInnings++;
+				}
+				
 				if (this.currentInning < numberOfInnings) {
 					this.currentInning++;
 					this.teamOnOffense = 'away';
+					this.batterDeck = this.awayTeam.deck;
+					this.pitcherDeck = this.homeTeam.deck;
 				}
 				else {
 					this.gameover = true;
 				}
 				break;
 		}
+		
+		displayMessage('notice', 'The side is retired.');
+		displayMessage('notice', '==========CHANGE INNING==========');
 		this.outs = 0;
 		this.clearBases();
-		this.pitcherCardValue = 0;
-		this.batterCardValue = 0;
-		setupNextInning();
-	},
-	getBases: function() {
-		return this.bases;
+		this.pitcherCard = 0;
+		this.batterCard = 0;
+
+        this.loadPitcherCards(); //get 3 cards for the pitcher to select from
+        this.loadBatterCards(true);
+		switchSockets();
 	},
 	clearBases: function() {
 		this.bases = [0,0,0];
@@ -194,11 +272,20 @@ Game.prototype = {
 		}
 		return results;
 	},
-	resultPlay: function() {
-		var playDifference = this.pitcherCardValue - this.batterCardValue; //if <= 0 then batter wins duel
+	resultPlay: function(index) { //index is used to determine which batter card was selected (maybe need to change this to include pitcher at some point...)
+		var playDifference = this.pitcherCard.value - this.batterCard.value; //if <= 0 then batter wins duel
+
+		//move the batter's card back into the hand (the pitchers is moved from their selections in the server level
+		this.batterDeck.addCardToHand(this.batterSelections[this.outs].splice(index, 1)[0]);
 
 		if (playDifference < 0) { //base hit
-			displayMessage('', 'Pitcher: ' + this.pitcherCardValue + ', Batter: ' + this.batterCardValue + ' (Batter wins)');
+			displayMessage('', 'Pitcher: ' + this.pitcherCard.value + ', Batter: ' + this.batterCard.value + ' (Batter wins)');
+			
+			if (!this.batterSelections[this.outs].length) {
+				displayMessage('notice', 'Replenishing batter cards...');
+				this.loadBatterCards(false); //only load the batter card array being replenished
+			}
+			
 			playDifference = Math.abs(playDifference); //get the absolute value to decide outcome
 			if (playDifference > 10) { // 11, 12, 13
 				displayMessage('hit', 'Around to third on the triple.');
@@ -239,7 +326,7 @@ Game.prototype = {
 			return 'walk'; // 1, 2
 		}
 		else if(playDifference === 0) { //home run
-			displayMessage('', 'Pitcher: ' + this.pitcherCardValue + ', Batter: ' + this.batterCardValue + ' (Batter wins)');
+			displayMessage('', 'Pitcher: ' + this.pitcherCard.value + ', Batter: ' + this.batterCard.value + ' (Batter wins)');
 			displayMessage('notice', 'That ball is deep... the defender is running back towards the wall...');
 			//roll a dice to see if the defence robs it at the wall
 			var diceRoll = this.rollDice(false, true);
@@ -255,13 +342,17 @@ Game.prototype = {
 			else {
 				displayMessage('', 'Pitcher high: '+pitcherHigh+', Batter high: '+batterHigh+' (Batter wins)');
 				displayMessage('hit', 'And it\'s a home run!');
+				
+				//move the card back into the hand
+				//this.batterDeck.addCardToHand(this.batterSelections[this.outs].splice(index, 1)[0]);
+				
 				this.moveRunnersUp(4);
-				this.addRuns(1);
+				//this.addRuns(1); //this run is now added on the move runners up to add up the runs scored correctly - otehrwise end up with 2 messages saying how many scored (2 runs scored, 1 run scored)
 				return 'home run';
 			}
 		}
 		else { //pitcher wins
-			displayMessage('', 'Pitcher: ' + this.pitcherCardValue + ', Batter: ' + this.batterCardValue + ' (Pitcher wins)');
+			displayMessage('', 'Pitcher: ' + this.pitcherCard.value + ', Batter: ' + this.batterCard.value + ' (Pitcher wins)');			
 			if (playDifference > 8) {
 				displayMessage('out', 'A long fly ball into the outfield.');
 				this.addOut();
@@ -275,11 +366,11 @@ Game.prototype = {
 				return 'fly ball'; // 9, 10, 11, 12, 13
 			}
 			else if (playDifference > 3) { // 4, 5, 6, 7, 8
-				displayMessage('out', 'Out from a ground ball.');
-				this.addOut();
 				//now check that there is more than 1 out left to go and see if there is a runner on first base, if so then roll the dice to see if you get a double play
-				if (this.outs >= 1 && this.bases[0] === 1) {
+				if (this.outs < 2 && this.bases[0] === 1) {
 					displayMessage('notice', 'It\'s a ground ball. Attempting the double play...');
+					this.addOut();
+					
 					//now we need to check if there was a runner on second, if so then they will move to third
 					if (this.bases[1] === 1) {
 						this.removeRunnerFromBase(2);
@@ -304,11 +395,37 @@ Game.prototype = {
 						return 'ground ball - feilders choice';
 					}
 				}
+				displayMessage('out', 'Out from a ground ball.');
+				this.addOut();
 				return 'ground ball';
 			}
 			displayMessage('out', 'Strikes him out.');
 			this.addOut();
 			return 'strikeout'; // 1, 2, 3
 		}
+	},
+	finishGame: function() {
+		displayMessage('', '==========GAME OVER==========');
+		
+		var winningTeam = '';
+		var awayScore = this.scores.away.sum();
+		var homeScore = this.scores.home.sum();
+			
+		if (awayScore > homeScore) {
+			winningTeam = 'away';
+			winningScore = awayScore;
+			losingScore = homeScore;
+		}
+		else {
+			winningTeam = 'home';
+			winningScore = homeScore;
+			losingScore = awayScore;
+		}
+		
+		var plural = (winningScore > 1) ? 's' : '';
+		displayMessage('', 'And that is all she wrote. The '+winningTeam+' team edge this one with '+winningScore+' run'+plural+' to '+losingScore);
 	}
 };
+
+//export for use in nodeJS
+module.exports = Game;
