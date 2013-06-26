@@ -55,7 +55,6 @@ Deck.prototype = {
     },
     pickRandomCards: function(numberOfCards) {
         var drawnThisTurn = [];
-        console.log(numberOfCards);
         
         //if trying to pick more cards than exist, just return all cards
         if (numberOfCards >= this.cardsInHand.length) {

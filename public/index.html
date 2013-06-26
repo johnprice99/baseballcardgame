@@ -4,10 +4,10 @@
         <meta charset="UTF-8" />
         <title>BBCG</title>
 
-		<link rel="stylesheet" href="/public/css/wireframe.css" />
-		<!--link rel="stylesheet" href="/public/css/main.css" /-->
+		<link rel="stylesheet" href="/css/wireframe.css" />
+		<!--link rel="stylesheet" href="/css/main.css" /-->
     </head>
-    <body ng-controller="GameCtrl">
+    <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
 			<section id="board">
 				<section id="field">
@@ -19,14 +19,14 @@
 						<section id="homePlate" class="base hasRunner">4</section>
 						<section id="mound" class="sand"><section id="rubber"></section></section>
    
-						<!--span ng-switch on="myRole">
+						<span ng-switch on="myRole">
 							<section ng-switch-when="batter">
 								<button type="button" id="stealSecond" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 0 }" class="button stealButton" ng-click="stealBase(2)">Steal 2nd</button>
 								<button type="button" id="stealThird" ng-class="{ visible : game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(3)">Steal 3rd</button>
 								<button type="button" id="stealSecondAndThird" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(5)">Double Steal (2nd &amp; 3rd)</button>
 								<button type="button" id="stealHome" ng-class="{ visible : game.bases[2] == 1 }" class="button stealButton" ng-click="stealBase(4)">Steal Home</button>
 							</section>
-						</span-->
+						</span>
 					</section>
 				</section>
 
@@ -43,101 +43,80 @@
 						<li>9</li>
 						<li>R</li>
 					</ul>
-
-					<p id="awayTeamLabel" class="left highlight">Visitor</p>
+					
+					<p id="awayTeamLabel" ng-class="{ highlight : myTeam == 'away' }" class="left">Visitor</p>
 					<ul id="visitor" class="clearfix">
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
+						<li ng-repeat="score in game.scores.away">{{score}}</li>
+						<li>{{game.scores.away.sum()}}</li>
 					</ul>
 
-					<p id="homeTeamLabel" class="left">Home</p>
+					<p id="homeTeamLabel" ng-class="{ highlight : myTeam == 'home' }" class="left">Home</p>
 					<ul id="home" class="clearfix">
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
-						<li>0</li>
+						<li ng-repeat="score in game.scores.home">{{score}}</li>
+						<li>{{game.scores.home.sum()}}</li>
 					</ul>
 
 					<section class="right clearfix">
 						<p class="left">Out</p>
 						<ul id="outs" class="left clearfix">
-							<li class="out">O</li>
-							<li>O</li>
+							<li ng-class="{ out : game.outs >= 1 }">O</li>
+							<li ng-class="{ out : game.outs == 2 }">O</li>
 						</ul>
 					</section>
 
 					<section class="left clearfix">
 						<p class="left">Inn</p>
 						<ul class="left">
-							<li id="inning">1</li>
-							<li id="teamOnOffense" class="away"></li>
+							<li id="inning">{{game.currentInning}}</li>
+							<li id="teamOnOffense" ng-class="game.teamOnOffense"></li>
 						</ul>
 					</section>
 				</section>
 
-				<!--span ng-switch on="myRole">
-					<section ng-switch-when="batter" ng-include="'public/partials/batter.html'"></section>
-					<section ng-switch-when="pitcher" ng-include="'public/partials/pitcher.html'"></section>
-				</span-->
-				
-				<section id="playerCards">
-					<ul class="clearfix">
-						<li><section class="card back"></section></li>
-						<li><section class="card back"></section></li>
-						<li><section class="card back"></section></li>
-						<li><section class="card back"></section></li>
-						<li><section class="card back"></section></li>
-
-						<!--li><section class="card">3</section></li>
-						<li><section class="card">9</section></li>
-						<li><section class="card">7</section></li>
-						<li><section class="card back pack"></section></li-->
-					</ul>
-					<!--h4>Waiting for pitcher...</h4-->
+				<section id="playerCards" ng-switch on="myRole">
+					<section ng-switch-when="batter" ng-include="'/partials/batter.html'"></section>
+					<section ng-switch-when="pitcher" ng-include="'/partials/pitcher.html'"></section>
 				</section>
 
 				<ul id="selectedCards" class="clearfix">
-					<li id="pitcherCard" class="left"><section class="card"></section></li>
-					<li id="batterCard" class="right"><section class="card"></section></li>
+					<li id="pitcherCard" class="left"><section class="card">{{game.pitcherCard.value}}</section></li>
+					<li id="batterCard" class="right"><section class="card">{{game.batterCard.value}}</section></li>
 				</ul>
-
-				<section id="messageBox"></section>
+				
+				<section id="messageBox" scroll-glue><p ng-repeat="msg in messages" ng-class="msg.type">{{msg.text}}</p></section>
 			</section>
 		</section>
 
-		
+		<script src="/js/common.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
-		<script>
-			Array.prototype.sum = function() {
-				return this.reduce(function(a,b){return a+b;});
-			};
-		</script>
-		
-		
-		<script>
+		<script src="/js/modules/ScrollGlue.js"></script>
+		<!--script src="/js/services/SocketService.js"></script-->
 
+		<script src="/js/controllers/GameController.js"></script>
+		<script>
+			/*
+			 * TODO
+			 *
+			 * Change it so that there can be multiple games going - if both players disconnect, remove the game from the server
+			 *     - when the first person connects, show a code and then the second person should use that code to connect to the game
+			 *
+			 * change the steal base buttons - trying to add an ngif directive (jpIf) as there is too much unnecessary HTML using a switch
+			 * Host up on nodejitsu - and see if we can get the game to work!
+			 * Add win graphics that appear when winner, and home run graphics too?
+			 * look into seperating the socket factory stuff below into a seperate file
+			 * Slow the game down a bit - decisions seem to be too fast
+			 *
+			 * Allow the user to name their team for the game (and colour of deck/playing pieces)
+			 * Add a span to represent the runner on base - animate them when they score
+			 * Add a span to represent the ball and animate it to where it goes on the play
+			 * Add the ability for users to roll their own dice
+			 * Store the team in a database in the backend - show standings based on player locality (UK, USA, Kent UK leagues etc)
+			 *
+			 */
+			var socket = io.connect('http://bbcg.local:1337');
 
-			var socket = io.connect('http://localhost:1337');
-			socket.on('consoleMessage', function(msg){
-				console.log(msg);
-			});
-			
-			var app = angular.module('bbcgApp', []);
+			var app = angular.module('bbcgApp', ['ScrollGlue']);
 
 			app.factory('socket', function ($rootScope) {
 				var socket = io.connect();
@@ -162,60 +141,6 @@
 					}
 				};
 			});
-
-
-			/*
-			 * TODO
-			 *
-			 * Clean up the frontend code with the wireframe design
-			 * move angular/socket and common code into central location
-			 * Add win graphics that appear when winner, and home run graphics too?
-			 * Add a refresh check to make sure people do not accidentally refresh the browser
-			 * Make the disconnect end the game for both players - the team that didn't disconnect will "win"
-			 * Slow the game down a bit - decisions seem to be too fast
-			 * Change it so that there can be multiple games going - if both players disconnect, remove the game from the server
-			 * 
-			 * Allow the user to name their team for the game (and colour of deck/playing pieces)
-			 * Add a span to represent the runner on base - animate them when they score
-			 * Add a span to represent the ball and animate it to where it goes on the play
-			 * Add the ability for users to roll their own dice
-			 * Store the team in a database in the backend - show standings based on player locality (UK, USA, Kent UK leagues etc)
-			 *
-			 */
-			function GameCtrl($scope, socket) {
-				socket.on('displayMessage', function(message) {
-					console.log(message.text);
-					/*$('#messageBox').append('<p class="'+type+'">'+message+'</p>').animate({
-					scrollTop:$("#messageBox")[0].scrollHeight
-					}, 1000);*/
-				});
-				
-				socket.on('updateGameModel', function(game) {
-					$scope.game = game;
-				});
-				
-				socket.on('updateRole', function(role) {
-					$scope.myRole = role;
-				});
-				
-				/*----- User interaction events -----*/
-				
-				$scope.selectPitcherCard = function(index) {
-					if (!$scope.game.gameover && !$scope.game.pitcherReady) { //prevent double clicking
-						socket.emit('throwPitch', { index: index });
-					}
-				}
-				
-				$scope.selectBatterCard = function(index) {
-					if (!$scope.game.gameover && $scope.game.pitcherReady) {
-						socket.emit('swingBat', { index: index });
-					}
-				};
-				
-				$scope.stealBase = function(base) {
-					socket.emit('stealBase', { base: base });
-				}
-			}
 		</script>
     </body>
 </html>

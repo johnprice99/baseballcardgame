@@ -11,8 +11,8 @@ function Game() {
     
 	this.bases = [0,0,0];
 	this.scores = {
-		'away' : [0,0],
-		'home' : [0,0]
+		'away' : [0,0,0,0,0,0,0,0,0],
+		'home' : [0,0,0,0,0,0,0,0,0]
 	},
 	this.currentInning = 1;
 	this.teamOnOffense = 'away';

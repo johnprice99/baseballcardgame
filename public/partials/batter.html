@@ -1,10 +1,6 @@
 <span ng-switch on="game.pitcherReady">
-	<section ng-switch-when="true">
-		<section id="playerCards">
-			<ul class="clearfix">
-				<li ng-repeat="card in game.batterSelections[game.outs]"><section ng-click="selectBatterCard($index)" class="card back"></section></li>
-			</ul>
-		</section>
-	</section>
-	<p ng-switch-default>Waiting for pitcher...</p>
+	<ul ng-switch-when="true" class="clearfix">
+		<li ng-repeat="card in game.batterSelections[game.outs]"><section ng-click="selectBatterCard($index)" class="card back"></section></li>
+	</ul>
+	<h4 ng-switch-default>Waiting for pitcher...</h4>
 </span>

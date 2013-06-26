@@ -1,3 +1,5 @@
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak { display: none; }
+
 * { margin:0; padding:0; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
 .clearfix:before, .clearfix:after { content:""; display:table; }
 .clearfix:after { clear:both; }
@@ -25,7 +27,7 @@ html, body {
 #board {
 	width:1024px;
 	height:768px;
-	margin:50px auto;
+	margin:0 auto;
 	outline:1px solid #000;
 	position:relative;
 	overflow:hidden;
@@ -35,7 +37,7 @@ html, body {
 	border-left:1px solid #000;
 	height:100%;
 	width:304px;
-	overflow:auto;
+	overflow-y: auto;
 	position:absolute;
 	top:0px;
 	right:0px;
@@ -205,27 +207,23 @@ html, body {
 	border:1px solid #000;
 }
 
-/*
+.stealButton { display:none; }
+.stealButton.visible { display:block; }
+
 .button {
 	padding:3px 10px;
-	background-color:green;
-	color:#fff;
-	border:2px solid #fff;
+	border:1px solid #000;
 	text-transform: uppercase;
 	cursor:pointer;
-	border-radius: 4px;
-	box-shadow:0 0 20px #000;
 }
-.button:hover { color: yellow; }
 .stealButton {
 	position:absolute;
 	-webkit-transform:rotate(-45deg);
 }
-#stealSecond { right: 2px; top: -43px; }
-#stealThird { left: -74px; top: -47px; }
-#stealSecondAndThird { left: -40px; top: 48px; }
-#stealHome { left: -82px; top: 296px; }
-*/
+#stealSecond { right: -3px; top: -27px; }
+#stealThird { left: -67px; top: -35px; }
+#stealSecondAndThird { left: -60px; top: 28px; }
+#stealHome { left: -61px; top: 137px; }
 
 #scoreboard {
 	position:absolute;

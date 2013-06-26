@@ -7,46 +7,34 @@ var express = require('express'),
 
 io.set('log level', 1); // reduce logging
 
-var Player = require('./public/js/Player.js');
-var Game = require('./public/js/Game.js');
+var Player = require('./public/js/models/Player.js');
+var Game = require('./public/js/models/Game.js');
 
 server.listen(1337);
 console.log('listening to port 1337');
 
-app.get('/', function(request, response) {
-    response.sendfile(__dirname + "/public/index.html");
-});
+app.use(express.static(__dirname + '/public'));
 
-app.get('/public/:dir/:file', function(request, response) {
-    response.sendfile(__dirname + '/public/'+request.params.dir+'/'+request.params.file);
-});
-
-app.get('/public/partials/:dir/:file', function(request, response) {
-    response.sendfile(__dirname + '/public/partials/'+request.params.dir+'/'+request.params.file);
-});
-
-var game = new Game();
+var game;
 var pitcherSocket, batterSocket;
 
 io.sockets.on('connection', function(socket) {
-    if (game.homeTeam != null && game.awayTeam != null) {
-        socket.emit('consoleMessage', 'There are no teams available at the moment');
-        return;
-    }
-    else {
-        if (game.homeTeam == null) {
-			var playerTeam = new Player('home', 'Home');
-			game.homeTeam = playerTeam;
-			pitcherSocket = socket;
-        }
-        else if(game.awayTeam == null) {
-			var playerTeam = new Player('away', 'Visitor');
-			game.awayTeam = playerTeam;
-			batterSocket = socket;
-        }
-        socket.set('playerTeam', playerTeam);
-        socket.emit('consoleMessage', 'You are the '+playerTeam.location+' team');
-    }
+
+	if (!game || game.homeTeam == null) {
+		//create a new game whenever the home team connects
+		game = new Game();
+		var playerTeam = new Player('home', 'Home');
+		game.homeTeam = playerTeam;
+		pitcherSocket = socket;
+	}
+	else if(game.awayTeam == null) {
+		var playerTeam = new Player('away', 'Visitor');
+		game.awayTeam = playerTeam;
+		batterSocket = socket;
+	}
+	socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
+	socket.emit('updateTeam', playerTeam.location);
+	socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
     
     if (game.homeTeam != null && game.awayTeam != null) {
         //Step 2 - When both teams are ready, send a message to both players that we can proceed, assign the roles (pitcher/batter) and start the game (playBall)
@@ -81,11 +69,10 @@ function closeConnection(myTeam) {
         else if(myTeam == 'away') {
             game.awayTeam = null;
         }
-        io.sockets.emit('consoleMessage', myTeam+' team has disconnected');
+		displayMessage('', myTeam+' team has disconnected. You win!');
+		game.gameover = true;
     }
 }
-
-
 
 function playBall() {
 	game.pitcherDeck = game.homeTeam.deck;
