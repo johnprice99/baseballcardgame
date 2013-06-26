@@ -1,11 +1,9 @@
 <span ng-switch on="game.pitcherReady">
-	<p ng-switch-when="true">You have selected: {{ game.pitcherCard.value }}</p>
 	<section ng-switch-default>
-		<p>Select a card to pitch</p>
 		<section id="playerCards">
 			<ul class="clearfix">
 				<li ng-repeat="card in game.pitcherSelections"><section ng-click="selectPitcherCard($index)" class="card back">{{card.value}}</section></li>
-				<li><section ng-click="selectPitcherCard(4)" class="card back">???</section></li>
+				<li><section ng-click="selectPitcherCard(4)" class="card back"></section></li>
 			</ul>
 		</section>
 	</section>

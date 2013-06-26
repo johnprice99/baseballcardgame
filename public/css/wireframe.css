@@ -1,0 +1,312 @@
+* { margin:0; padding:0; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+.clearfix:before, .clearfix:after { content:""; display:table; }
+.clearfix:after { clear:both; }
+.left { float:left; }
+.right { float:right; }
+.hidden { display:none; }
+ul li { list-style-type:none; }
+
+html, body {
+	height:100%;
+	font-family: Arial, sans-serif;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+#container {
+	width:100%;
+	height:100%;
+	border:1px solid #000;
+}
+
+#board {
+	width:1024px;
+	height:768px;
+	margin:50px auto;
+	outline:1px solid #000;
+	position:relative;
+	overflow:hidden;
+}
+
+#messageBox {
+	border-left:1px solid #000;
+	height:100%;
+	width:304px;
+	overflow:auto;
+	position:absolute;
+	top:0px;
+	right:0px;
+}
+#messageBox p {
+	color:#333;
+	padding:5px;
+}
+#messageBox p.event {
+	background-color: green;
+	color:#fff;
+}
+#messageBox p.hit {
+	background-color: magenta;
+	color:#fff;
+}
+#messageBox p.out {
+	background-color: red;
+	color:#fff;
+}
+#messageBox p.notice {
+	background-color: orange;
+	color:#fff;
+}
+
+.card {
+	border:1px solid #000;
+	width:120px;
+	height:150px;
+	cursor:default;
+	text-align:center;
+	line-height:150px;
+	font-weight:bold;
+	font-size:74px;
+	text-indent:-2px; /* For some reason, the text isn't aligning correctly in Arial */
+}
+.card.back { cursor:pointer; }
+
+.card.pack { box-shadow: 1px 1px 0 0 #fff, 2px 2px 0 0 #000, 3px 3px 0 0 #fff, 4px 4px 0 0 #000; }
+
+#playerCards {
+	position:absolute;
+	bottom:20px;
+	left:20px;
+}
+#playerCards ul li {
+	float:left;
+	margin-right:20px;
+}
+#playerCards h4 {
+	font-size:52px;
+	text-align:center;
+}
+
+#selectedCards {
+	width:260px;
+	height:150px;
+	position:absolute;
+	right:350px;
+	bottom:260px;
+}
+#selectedCards li { position:relative; }
+#selectedCards #pitcherCard:before,
+#selectedCards #batterCard:before,
+#selectedCards li:after {
+	text-transform: uppercase;
+	font-weight:bold;
+	font-size:20px;
+	width:100%;
+	text-align:center;
+	position:absolute;
+}
+#selectedCards #pitcherCard:before,
+#selectedCards #batterCard:before {
+	letter-spacing:2px;
+	top:-27px;
+}
+#selectedCards #pitcherCard:before { content: "Pitcher"; }
+#selectedCards #batterCard:before { content: "Batter"; }
+#selectedCards li:after {
+	content: "Selection";
+	bottom:-30px;
+	letter-spacing:1px;
+}
+
+#field {
+	width:300px;
+	height:300px;
+	position:absolute;
+	left:20px;
+	bottom:250px;
+	overflow:hidden;
+	-webkit-transform:rotate(45deg);
+	border-right:1px solid #000;
+	border-bottom:1px solid #000;
+}
+#dirt {
+	width:360px;
+	height:360px;
+	position:absolute;
+	right:-80px;
+	bottom:-80px;
+	border-radius: 100%;
+	border:1px solid #000;
+}
+#diamond {
+	width:200px;
+	height:200px;
+	position:absolute;
+	right:0;
+	bottom:0;
+	outline:1px solid #000;
+}
+#diamond .base {
+	position:absolute;
+	width:24px;
+	height:24px;
+	font-size:0;
+	background-color:red;
+}
+#diamond .base#first { top: -12px; right: 0; }
+#diamond .base#second { top: -12px; left: -12px; }
+#diamond .base#third { bottom: 0; left: -12px; }
+#diamond .base#homePlate {
+	bottom:6px;
+	right:0px;
+	height:12px;
+	-webkit-transform:rotate(-45deg);
+}
+#diamond .base#homePlate:before {
+	content: "";
+	position: absolute;
+	height: 0;
+	width: 0;
+	top: 11px;
+	left: 0;
+	border-width: 12px 12px 0;
+	border-style: solid;
+	border-color: red transparent transparent;
+}
+
+#diamond #mound {
+	width:80px;
+	height:80px;
+	position:absolute;
+	top:50%;
+	left:50%;
+	margin-top: -40px;
+	margin-left: -40px;
+	border-radius: 100%;
+	border:1px solid #000;
+}
+#diamond .base.hasRunner, #diamond .base#homePlate.hasRunner:before {
+	background-color:#000;
+	border-color: #000 transparent transparent;
+}
+#diamond #rubber {
+	position:absolute;
+	width:36px;
+	height:12px;
+	top: 50%;
+	left: 50%;
+	margin-left:-18px;
+	margin-top:-6px;
+	background-color:#fff;
+	-webkit-transform:rotate(-45deg);
+	border:1px solid #000;
+}
+
+/*
+.button {
+	padding:3px 10px;
+	background-color:green;
+	color:#fff;
+	border:2px solid #fff;
+	text-transform: uppercase;
+	cursor:pointer;
+	border-radius: 4px;
+	box-shadow:0 0 20px #000;
+}
+.button:hover { color: yellow; }
+.stealButton {
+	position:absolute;
+	-webkit-transform:rotate(-45deg);
+}
+#stealSecond { right: 2px; top: -43px; }
+#stealThird { left: -74px; top: -47px; }
+#stealSecondAndThird { left: -40px; top: 48px; }
+#stealHome { left: -82px; top: 296px; }
+*/
+
+#scoreboard {
+	position:absolute;
+	top:20px;
+	left:20px;
+	width:680px;
+	font-weight:bold;
+	font-size:20px;
+	padding:20px;
+	border:1px solid #000;
+	cursor:default;
+}
+#scoreboard:before {
+	content: "";
+	position:absolute;
+	right:71px;
+	top:20px;
+	height:180px;
+	width:3px;
+	background-color: #000;
+}
+#scoreboard p {
+	text-transform: uppercase;
+	clear:both;
+	width:113px;
+	height:40px;
+	line-height:40px;
+}
+#scoreboard p.highlight { color:#ccc; }
+#scoreboard ul#home, #scoreboard ul#visitor { margin-bottom:10px; }
+#scoreboard ul li {
+	width:45px;
+	height:40px;
+	line-height:40px;
+	margin-right:5px;
+	text-align:center;
+	float:left;
+	border:1px solid #000;
+}
+#scoreboard ul li:nth-child(3n) { margin-right:15px; }
+#scoreboard ul li:last-child { margin-right:0; }
+#scoreboard #headers { margin-left: 113px; }
+#scoreboard #headers li {
+	border: none;
+	background:none;
+	box-shadow:none;
+}
+
+#scoreboard section.left { margin-left: 282px; }
+#scoreboard section.left p.left { width:auto; margin-right:5px; }
+
+#scoreboard .right { margin-right:60px; }
+#scoreboard .right p { width:auto; text-align:right; }
+#scoreboard #outs { margin-top:12px; }
+#scoreboard #outs li {
+	display:block;
+	width:18px;
+	height:18px;
+	border-radius:100%;
+	border:1px solid #000;
+	margin-right:0;
+	margin-left:7px;
+	float:left;
+	overflow:hidden;
+	text-indent:-999px;
+}
+#scoreboard #outs li.out { background-color: #ccc; }
+
+#teamOnOffense { position:relative; }
+#teamOnOffense:after {
+	content: "";
+	display:block;
+	position:absolute;
+	top:50%;
+	left:50%;
+	margin-left:-8px;
+	margin-top:-5px;
+	width: 0;
+	height: 0;
+	border-left: 8px solid transparent;
+	border-right: 8px solid transparent;
+}
+#teamOnOffense.away:after { border-bottom: 10px solid #000; }
+#teamOnOffense.home:after { border-top: 10px solid #000; }

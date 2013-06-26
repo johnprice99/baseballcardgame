@@ -1,19 +1,3 @@
-/*
-
-DONE
-Step 1 - Two browsers connect
-Step 2 - When both teams are ready, send a message to both players that we can proceed, assign the roles (pitcher/batter) and start the game (playBall)
-
-TODO
-Step 3 - Listen for when the pitcher is ready (pitcher selects a card) and select the appropriate card and return the value to them
-Step 4 - Pitcher recieves the message from the server about the value of their card
-Step 5 - Batter recieves message that they can proceed with their turn (and the pitcher's card value)
-Step 6 - Listen for when the batter selects a card and select the appropriate one for them and return the value to them
-Step 7 - Send out both card values to both players so they can see what they have selected
-Step 8 - The play progresses and the game board is updated... (more steps after this)
-
-*/
-
 var express = require('express'),
     app = express(),
     http = require('http'),
@@ -21,20 +5,24 @@ var express = require('express'),
     io = require('socket.io').listen(server),
     fs = require('fs');
 
-//io.set('log level', 1); // reduce logging
+io.set('log level', 1); // reduce logging
 
-var Player = require('./js/Player.js');
-var Game = require('./js/Game.js');
+var Player = require('./public/js/Player.js');
+var Game = require('./public/js/Game.js');
 
 server.listen(1337);
 console.log('listening to port 1337');
 
 app.get('/', function(request, response) {
-    response.sendfile(__dirname + "/index.html");
+    response.sendfile(__dirname + "/public/index.html");
 });
 
-app.get('/partials/:index', function(request, response){
-    response.sendfile(__dirname + "/partials/"+request.params.index);
+app.get('/public/:dir/:file', function(request, response) {
+    response.sendfile(__dirname + '/public/'+request.params.dir+'/'+request.params.file);
+});
+
+app.get('/public/partials/:dir/:file', function(request, response) {
+    response.sendfile(__dirname + '/public/partials/'+request.params.dir+'/'+request.params.file);
 });
 
 var game = new Game();
