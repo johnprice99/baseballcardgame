@@ -1,6 +1,10 @@
 function GameCtrl($scope, socket) {
 	$scope.messages = [];
-
+	
+	socket.on('consoleLog', function (message) {
+		console.log(message);
+	});
+	
 	socket.on('displayMessage', function(message) {
 		//console.log(message.text);
 		$scope.messages.push(message);

@@ -24,6 +24,30 @@ html, body {
 	border:1px solid #000;
 }
 
+#controlCenter {
+	border:1px solid #000;
+	width:300px;
+	height:230px;
+	padding:25px;
+	position:fixed;
+	top:50%;
+	margin-top:-115px;
+	left:50%;
+	margin-left:-150px;
+}
+#controlCenter input { margin-bottom:10px; }
+#controlCenter input, #controlCenter button {
+	width:100%;
+	padding:10px;
+	font-size:1.1em;
+	font-family:Arial, sans-serif;
+}
+#controlCenter p {
+	text-align: center;
+	font-weight:bold;
+	margin: 5px 0;
+}
+
 #board {
 	width:1024px;
 	height:768px;

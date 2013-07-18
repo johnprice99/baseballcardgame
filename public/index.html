@@ -9,7 +9,14 @@
     </head>
     <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
-			<section id="board">
+			<section id="controlCenter">
+				<button type="button" onclick="createGame();">Create a new game</button>
+				<p>or</p>
+				<input type="phone" id="gameID" placeholder="Game ID" maxlength="5" />
+				<button type="button" onclick="joinGame();">Join an existing game</button>
+			</section>
+		
+			<section id="board" style="display:none;">
 				<section id="field">
 					<section id="dirt" class="sand"></section>
 					<section id="diamond">
@@ -102,12 +109,16 @@
 			 *     - when the first person connects, show a code and then the second person should use that code to connect to the game
 			 *
 			 * change the steal base buttons - trying to add an ngif directive (jpIf) as there is too much unnecessary HTML using a switch
-			 * Host up on nodejitsu - and see if we can get the game to work!
 			 * Add win graphics that appear when winner, and home run graphics too?
 			 * look into seperating the socket factory stuff below into a seperate file
-			 * Slow the game down a bit - decisions seem to be too fast
+			 * Host up on nodejitsu/amazon - and see if we can get the game to work!
+			 *
+			 * improve the graphics - add popups etc
+			 * add the tutorial popup to the game board
+			 * Create the rest of the website - which will have a tutorial etc
 			 *
 			 * Allow the user to name their team for the game (and colour of deck/playing pieces)
+			 * Slow the game down a bit - decisions seem to be too fast
 			 * Add a span to represent the runner on base - animate them when they score
 			 * Add a span to represent the ball and animate it to where it goes on the play
 			 * Add the ability for users to roll their own dice
@@ -141,6 +152,15 @@
 					}
 				};
 			});
+			
+			function joinGame() {
+				var gameID = document.querySelector('#gameID').value;
+				socket.emit('joinGame', gameID);
+			}
+			
+			function createGame() {
+				socket.emit('createGame');
+			}
 		</script>
     </body>
 </html>
