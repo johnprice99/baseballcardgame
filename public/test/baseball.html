@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Test</title>
+        <style>
+            #ball {
+				width:150px;
+				height:150px;
+				border:2px solid #000;
+				border-radius:100%;
+				position:relative;
+				overflow:hidden;
+				background: -webkit-radial-gradient(75px 90px, ellipse cover, #FDFDFD 20%,#B9B1AF 100%);
+			}
+			#ball:before, #ball:after {
+				border-radius:100%;
+				border:4px dashed red;
+				position:absolute;
+				content:"";
+			}
+			#ball:before {
+				left:-82px;
+				top:-66px;
+				width:116px;
+				height:181px;
+				-webkit-transform:rotate(26deg);
+			}
+			#ball:after {
+				right:-72px;
+				top: 19px;
+				width:120px;
+				height:154px;
+				-webkit-transform:rotate(18deg);
+			}
+        </style>
+    </head>
+    <body>
+        <section id="ball"></section>
+    </body>
+</html>

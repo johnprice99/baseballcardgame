@@ -16,28 +16,36 @@ console.log('listening to port 1337 (use bbcg.local - NOT localhost!!!)');
 app.use(express.static(__dirname + '/public'));
 
 var gamePool = {};
-/*var game;
-var pitcherSocket, batterSocket;*/
 
 /* --- Global/Server-wide functions --- */
 
-global.displayMessage = function(type, message) {
-	io.sockets.emit('displayMessage', { type: type, text: message });
+global.displayMessage = function(type, message, gamePoolID) {
+	//check if game exists
+	if (gamePoolID in gamePool) {
+		var game = gamePool[gamePoolID];
+		game.pitcherSocket.emit('displayMessage', { type: type, text: message });
+		game.batterSocket.emit('displayMessage', { type: type, text: message });
+	}
 }
 global.randomIntBetween = function(low, high) {
 	return Math.floor(Math.random() * high) + low;
 }
-global.switchSockets = function() {
-	var t = pitcherSocket; //temp to switch
-	pitcherSocket = batterSocket;
-	batterSocket = t;
-	bindSockets();
+global.switchSockets = function(gamePoolID) {
+	if (gamePoolID in gamePool) {
+		var game = gamePool[gamePoolID];
+		var t = game.pitcherSocket; //temp to switch
+		
+		game.pitcherSocket = game.batterSocket;
+		game.batterSocket = t;
+		bindSockets(gamePoolID);
+	}
 }
 
 function generateGameID() {
 	//first, generate the ID
 	var genKey = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    //var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     for (var i=0; i<5; i++) {
         genKey += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -52,6 +60,88 @@ function generateGameID() {
     return genKey;
 }
 
+/* --- Gameplay functions --- */
+
+function playBall(gamePoolID) {
+	//check if game exists
+	if (gamePoolID in gamePool) {
+		var gameData = gamePool[gamePoolID];
+		var game = gameData.game;
+			
+		game.pitcherDeck = game.homeTeam.deck;
+		game.batterDeck = game.awayTeam.deck;
+		game.playBall();
+		
+		//send the updated game model to each socket so that the frontend can be updated correctly
+		gameData.pitcherSocket.emit('updateGameModel', game);
+		gameData.batterSocket.emit('updateGameModel', game);
+		
+		bindSockets(gamePoolID);
+	}
+}
+
+function bindSockets(gamePoolID) {
+	//check if game exists
+	if (gamePoolID in gamePool) {
+		var gameData = gamePool[gamePoolID];
+		var game = gameData.game;
+			
+		gameData.batterSocket.removeAllListeners("throwPitch");
+		gameData.pitcherSocket.removeAllListeners("swingBat");
+		gameData.pitcherSocket.removeAllListeners("stealBase");
+
+		//wait for the pitcher to select either one of the 3 pitching cards or the top of the deck
+		gameData.pitcherSocket.on('throwPitch', function(data) {
+			//check if we are just drawing from the top of the deck
+			if (data.index > 3) {
+				//add the previous selected card to the bottom of the pitcher's deck
+				if (game.pitcherCard != 0) {
+					game.pitcherDeck.addCardToHand(game.pitcherCard);
+				}
+				game.pitcherCard = game.pitcherDeck.drawCardsFromTop(1)[0];
+			}
+			else {
+				game.pitcherCard = game.pitcherSelections[data.index];
+				//this needs to be done here, or refactor the resultPlay() function
+				game.pitcherDeck.addCardToHand(game.pitcherSelections.splice(data.index, 1)[0]);
+			}
+
+			game.batterCard = 0;
+			game.pitcherReady = true;
+			
+			gameData.batterSocket.emit('updateGameModel', game);
+			gameData.pitcherSocket.emit('updateGameModel', game);
+		});
+		//send the signal to the batter that the pitcher is ready, and let the batter select their card
+		//send the result play once the batter has made their selection
+		gameData.batterSocket.on('swingBat', function(data) {
+			//set the batter's card
+			game.batterCard = game.batterSelections[game.outs][data.index];
+			game.pitcherReady = false;
+
+			//work out the play outcome
+			game.resultPlay(data.index);
+
+			if (game.gameover === true) {
+				game.finishGame();
+			}
+			
+			gameData.batterSocket.emit('updateGameModel', game);
+			gameData.pitcherSocket.emit('updateGameModel', game);
+		});
+
+		gameData.batterSocket.on('stealBase', function(data) {
+			game.stealBase(data.base);
+			
+			gameData.batterSocket.emit('updateGameModel', game);
+			gameData.pitcherSocket.emit('updateGameModel', game);
+		});
+
+		gameData.batterSocket.emit('updateRole', 'batter');
+		gameData.pitcherSocket.emit('updateRole', 'pitcher');
+	}
+}
+
 /* --- Socket IO functions --- */
 
 io.sockets.on('connection', function(socket) {
@@ -63,173 +153,91 @@ io.sockets.on('connection', function(socket) {
     });
 	socket.on('disconnect', function() { //if any user disconnects, then the game is over
 		// When a user disconnects, notify the winner and remove the game from the game array
-		socket.get('gameID', function (err, socketGameID) {
-			if (socketGameID !== null) {
-				console.log('player left, need to remove the game from the server');
-				/*socket.get('playerTeam', function (err, playerTeam) {
-					closeConnection(playerTeam.location);
-				});*/
-				removeGame(socketGameID);
+		socket.get('gameID', function (err, gamePoolID) {
+			if (gamePoolID !== null) {
+				socket.get('playerTeam', function (err, playerTeam) {
+					closeConnection(playerTeam.location, gamePoolID);
+				});
 			}
 		});
     });
-	/*
-	if (!game || game.homeTeam == null) {
-		//create a new game whenever the home team connects
-		game = new Game();
-		var playerTeam = new Player('home', 'Home');
-		game.homeTeam = playerTeam;
-		pitcherSocket = socket;
-	}
-	else if(game.awayTeam == null) {
-		var playerTeam = new Player('away', 'Visitor');
-		game.awayTeam = playerTeam;
-		batterSocket = socket;
-	}
-	socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
-	socket.emit('updateTeam', playerTeam.location);
-	socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
-    
-    if (game.homeTeam != null && game.awayTeam != null) {
-        //Step 2 - When both teams are ready, send a message to both players that we can proceed, assign the roles (pitcher/batter) and start the game (playBall)
-		playBall(socket);
-    }
-	
-	socket.on('disconnect', function() { //in future, if any user disconnects, then the game is over
-        socket.get('playerTeam', function (err, playerTeam) {
-            closeConnection(playerTeam.location);
-        });
-    });
-	*/
 });
-
-/*function closeConnection(myTeam) {
-    if (myTeam !== null) {
-        if (myTeam == 'home') {
-            game.homeTeam = null;
-        }
-        else if(myTeam == 'away') {
-            game.awayTeam = null;
-        }
-		displayMessage('', myTeam+' team has disconnected. You win!');
-		game.gameover = true;
-    }
-}
-
-function playBall() {
-	game.pitcherDeck = game.homeTeam.deck;
-	game.batterDeck = game.awayTeam.deck;
-
-	//pick three cards for the pitcher and send them back to the pitching team
-	//send the first 5 cards for the batting team to pick from
-	game.playBall();
-
-	//send the updated game model to each socket so that the frontend can be updated correctly
-	io.sockets.emit('updateGameModel', game);
-	
-	bindSockets();
-}
-
-function bindSockets() {
-	batterSocket.removeAllListeners("throwPitch");
-	pitcherSocket.removeAllListeners("swingBat");
-	pitcherSocket.removeAllListeners("stealBase");
-
-	//wait for the pitcher to select either one of the 3 pitching cards or the top of the deck
-	pitcherSocket.on('throwPitch', function(data) {
-		//check if we are just drawing from the top of the deck
-		if (data.index > 3) {
-			//add the previous selected card to the bottom of the pitcher's deck
-			if (game.pitcherCard != 0) {
-				game.pitcherDeck.addCardToHand(game.pitcherCard);
-			}
-			game.pitcherCard = game.pitcherDeck.drawCardsFromTop(1)[0];
-		}
-		else {
-			game.pitcherCard = game.pitcherSelections[data.index];
-			//this needs to be done here, or refactor the resultPlay() function
-			game.pitcherDeck.addCardToHand(game.pitcherSelections.splice(data.index, 1)[0]);
-		}
-
-		game.batterCard = 0;
-		game.pitcherReady = true;
-
-		io.sockets.emit('updateGameModel', game);
-	});
-	//send the signal to the batter that the pitcher is ready, and let the batter select their card
-	//send the result play once the batter has made their selection
-	batterSocket.on('swingBat', function(data) {
-		//set the batter's card
-		game.batterCard = game.batterSelections[game.outs][data.index];
-		game.pitcherReady = false;
-
-		//work out the play outcome
-		game.resultPlay(data.index);
-
-		if (game.gameover === true) {
-			game.finishGame();
-		}
-
-		io.sockets.emit('updateGameModel', game);
-	});
-
-	batterSocket.on('stealBase', function(data) {
-		game.stealBase(data.base);
-		io.sockets.emit('updateGameModel', game);
-	});
-
-	batterSocket.emit('updateRole', 'batter');
-	pitcherSocket.emit('updateRole', 'pitcher');
-}*/
 
 function createGame(socket) {
 	//fist, check that this socket doesn't already have a game ID - if it does then just stop
-	socket.get('gameID', function (err, socketGameID) {
-		if (socketGameID === null) {
-			console.log('creating a new game');
-			console.log('current game pool');
-			console.log(gamePool);
+	socket.get('gameID', function (err, gamePoolID) {
+		if (gamePoolID === null) {
 			//Generate a new Game ID, and display this to the user
 			var gameID = generateGameID();
 			//Add the user as the home team and add the game to the game array
-			gamePool[gameID] = 'new game';
-			console.log('new game pool');
-			console.log(gamePool);
+			var newGame = new Game();
+			newGame.gamePoolID = gameID;
+			var playerTeam = new Player('home', 'Home');
+			newGame.homeTeam = playerTeam;
+			var newGameObject = {
+				game: newGame,
+				pitcherSocket: socket
+			}
+			gamePool[gameID] = newGameObject;
 			//set the socket game ID, need to make sure that the user can only generate one game ID per connection
 			socket.set('gameID', gameID);
-			socket.emit('consoleLog', 'Your game ID is: '+gameID);
+			socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
+			socket.emit('updateTeam', playerTeam.location);
+			
+			socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
+			socket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">Your game ID is: <span>'+gameID+'</span></p><p>Waiting for an away team to join...<p>');
 		}
 	});
 }
 
 function joinGame(socket, gameID) {
 	//fist, check that this socket doesn't already have a game ID - if it does then just stop
-	socket.get('gameID', function (err, socketGameID) {
-		if (socketGameID === null) {
-			console.log('trying to join game: '+gameID);
-			console.log('current game pool');
-			console.log(gamePool);
+	socket.get('gameID', function (err, gamePoolID) {
+		if (gamePoolID === null) {
 			// Check if the game exists
 			if (gameID in gamePool) {
-				console.log('the game exists, so connect to this game');
-				socket.set('gameID', gameID);
+				joinedGameData = gamePool[gameID];
+				joinedGame = joinedGameData.game;
 				// If it does, then check that the home team is present and the away team is empty
-				//     -> If all ok, then add this player as the away team               
-				//     -> If not, then error and do not inturrupt the other game going on
+				if (joinedGame.awayTeam == null) {
+					joinedGameData.batterSocket = socket;
+					// If all ok, then add this player as the away team               
+					var playerTeam = new Player('away', 'Visitor');
+					joinedGame.awayTeam = playerTeam;
+					socket.set('gameID', gameID);
+					socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
+					socket.emit('updateTeam', playerTeam.location);
+					socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
+					//When both teams are ready, send a message to both players that we can proceed, assign the roles (pitcher/batter) and start the game (playBall)
+					playBall(gameID);
+				}
+				else {
+					socket.emit('showModalPopup', '<p>The game ID, '+gameID+', already has both teams playing.</p><p>Check your game ID or start a new game.</p>');
+				}
 			}
 			else {
 				//If the game doesn't exist, error and send back to start a new game
-				socket.emit('consoleLog', 'The game ID, '+gameID+', does not exist. Please start a new game.');
+				socket.emit('showModalPopup', '<p>The game ID<span>'+gameID+'</span> does not exist.</p><p>Start a new game.</p>');
 			}
 		}
 	});
 }
 
-function removeGame(gameID) {
-	console.log('trying to remove game: '+gameID);
-    console.log('current game pool');
-	console.log(gamePool);
-	delete gamePool[gameID];
-    console.log('after removal game pool');
-	console.log(gamePool);
+function closeConnection(leavingTeam, gamePoolID) {	
+	if (gamePoolID in gamePool) {
+		var gameData = gamePool[gamePoolID];
+		var game = gameData.game;
+		game.gameover = true;
+		
+		delete gamePool[gamePoolID];
+		
+		if (gameData.pitcherSocket !== undefined) {
+			gameData.pitcherSocket.emit('updateGameModel', game);
+			gameData.pitcherSocket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">The '+leavingTeam+' team has disconnected. You win!<p>');
+		}
+		if (gameData.batterSocket !== undefined) {
+			gameData.batterSocket.emit('updateGameModel', game);
+			gameData.batterSocket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">The '+leavingTeam+' team has disconnected. You win!<p>');
+		}
+    }
 }

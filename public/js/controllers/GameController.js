@@ -1,12 +1,12 @@
 function GameCtrl($scope, socket) {
 	$scope.messages = [];
 	
-	socket.on('consoleLog', function (message) {
-		console.log(message);
+	socket.on('showModalPopup', function (message) {
+		document.querySelector('#modalPopup').innerHTML = message;
+		$scope.showModalPopup = true;
 	});
-	
+			
 	socket.on('displayMessage', function(message) {
-		//console.log(message.text);
 		$scope.messages.push(message);
 	});
 
@@ -23,7 +23,20 @@ function GameCtrl($scope, socket) {
 	});
 
 	/*----- User interaction events -----*/
-
+	
+	$scope.joinGame = function() {
+		var gameID = document.querySelector('#gameID').value;
+		if (!gameID) {
+			$scope.alert('Invalid game ID', '<p>You must enter a game ID to join</p>');
+			return;
+		}
+		socket.emit('joinGame', gameID);
+	}
+			
+	$scope.createGame = function() {
+		socket.emit('createGame');
+	}
+			
 	$scope.selectPitcherCard = function(index) {
 		if (!$scope.game.gameover && !$scope.game.pitcherReady) { //prevent double clicking
 			socket.emit('throwPitch', { index: index });
@@ -40,7 +53,7 @@ function GameCtrl($scope, socket) {
 		socket.emit('stealBase', { base: base });
 	}
 	
-	window.onbeforeunload = function (e) {
+	/*window.onbeforeunload = function (e) {
 		if (!$scope.game.gameover) {
 			var message = "This will cancel your current game and you will be marked as the loser.", e = e || window.event;
 			// For IE and Firefox
@@ -50,5 +63,18 @@ function GameCtrl($scope, socket) {
 			// For Safari
 			return message;
 		}
-	};
+	};*/
+	
+	/* --- Modal popup code --- */
+	
+	$scope.alert = function(title, message) {
+		$scope.modal = {
+			"title" : title,
+			"message" : message,
+			"show" : true
+		}
+	}
+	$scope.closeModalPopup = function(title, message) {
+		$scope.modal.show = false;
+	}
 }

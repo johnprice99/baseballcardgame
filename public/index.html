@@ -9,15 +9,24 @@
     </head>
     <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
-			<section id="controlCenter">
-				<button type="button" onclick="createGame();">Create a new game</button>
+			<section id="controlCenter" ng-class="{ hidden : game.gameover != null }">
+				<button type="button" class="button" ng-click="createGame()">Create a new game</button>
 				<p>or</p>
 				<input type="phone" id="gameID" placeholder="Game ID" maxlength="5" />
-				<button type="button" onclick="joinGame();">Join an existing game</button>
+				<button type="button" class="button" ng-click="joinGame()">Join an existing game</button>
 			</section>
+			
+			<div id="modalPopup" ng-class="{ show : modal.show == true }">
+				<div id="modalContent">
+					<h3>{{modal.title}}</h3>
+					<section ng-bind-html-unsafe="modal.message"></section>
+					<button type="button" class="button" ng-click="closeModalPopup()">OK</button>
+				</div>
+			</div>
+			<div id="overlay" ng-click="closeModalPopup()"></div>
 		
-			<section id="board" style="display:none;">
-				<section id="field">
+			<section id="board" ng-class="{ hidden : game == null}">
+				<section id="field" style="display:none;">
 					<section id="dirt" class="sand"></section>
 					<section id="diamond">
 						<section id="first" ng-class="{ hasRunner : game.bases[0] == 1}" class="base">1</section>
@@ -37,7 +46,7 @@
 					</section>
 				</section>
 
-				<section id="scoreboard">
+				<section id="scoreboard" style="display:none;">
 					<ul id="headers" class="clearfix">
 						<li>1</li>
 						<li>2</li>
@@ -98,18 +107,18 @@
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
 		<script src="/js/modules/ScrollGlue.js"></script>
-		<!--script src="/js/services/SocketService.js"></script-->
+		
 
 		<script src="/js/controllers/GameController.js"></script>
 		<script>
 			/*
 			 * TODO
 			 *
-			 * Change it so that there can be multiple games going - if both players disconnect, remove the game from the server
-			 *     - when the first person connects, show a code and then the second person should use that code to connect to the game
+			 * have removed the changing of the controlcenter text (when starting a new game). need to fix that.
+			 * IN GAME: When waiting for batter, display that to the pitcher so they know what to expect
+			 * IN GAME: doesn't display when the team wins - show a different box for when the team wins, but not hiding the board - and when click OK, hide every interaction peice and add a button to start again
 			 *
-			 * change the steal base buttons - trying to add an ngif directive (jpIf) as there is too much unnecessary HTML using a switch
-			 * Add win graphics that appear when winner, and home run graphics too?
+			 * Wireframe the rest of the site - Home, How to play, Play a game, The future, Contact
 			 * look into seperating the socket factory stuff below into a seperate file
 			 * Host up on nodejitsu/amazon - and see if we can get the game to work!
 			 *
@@ -126,41 +135,8 @@
 			 *
 			 */
 			var socket = io.connect('http://bbcg.local:1337');
-
 			var app = angular.module('bbcgApp', ['ScrollGlue']);
-
-			app.factory('socket', function ($rootScope) {
-				var socket = io.connect();
-				return {
-					on: function (eventName, callback) {
-						socket.on(eventName, function () {
-							var args = arguments;
-							$rootScope.$apply(function () {
-								callback.apply(socket, args);
-							});
-						});
-					},
-					emit: function (eventName, data, callback) {
-						socket.emit(eventName, data, function () {
-							var args = arguments;
-							$rootScope.$apply(function () {
-								if (callback) {
-									callback.apply(socket, args);
-								}
-							});
-						})
-					}
-				};
-			});
-			
-			function joinGame() {
-				var gameID = document.querySelector('#gameID').value;
-				socket.emit('joinGame', gameID);
-			}
-			
-			function createGame() {
-				socket.emit('createGame');
-			}
 		</script>
+		<script src="/js/services/SocketService.js"></script>
     </body>
 </html>
