@@ -5,7 +5,7 @@ var express = require('express'),
     io = require('socket.io').listen(server),
     fs = require('fs');
 
-//io.set('log level', 1); // reduce logging
+io.set('log level', 1); // reduce logging
 
 var Player = require('./public/js/models/Player.js');
 var Game = require('./public/js/models/Game.js');
@@ -25,6 +25,84 @@ global.displayMessage = function(type, message, gamePoolID) {
 		var game = gamePool[gamePoolID];
 		game.pitcherSocket.emit('displayMessage', { type: type, text: message });
 		game.batterSocket.emit('displayMessage', { type: type, text: message });
+	}
+}
+global.sendGameUpdate = function(gamePoolID) {
+	//check if game exists
+	if (gamePoolID in gamePool) {
+		var gameData = gamePool[gamePoolID];
+		var game = gameData.game;
+		
+		var winningTeam = '';
+		var awayScore = game.scores.away.sum();
+		var homeScore = game.scores.home.sum();
+		
+		if (game.gameStarted == false) { //when the game begins
+			gameData.pitcherSocket.emit('showModalPopup', 'Game started', 'The game is about to begin. You are the home team, pitching first..', 'OK');
+			gameData.batterSocket.emit('showModalPopup', 'Game started', 'You have joined the game and are the away team, batting first.', 'OK');
+		}
+		else if (game.gameover == true) { //when calling this function from the game over
+			var winningScore, losingScore, winningMsg, losingMsg;
+
+			if (awayScore > homeScore) {
+				winningTeam = 'away';
+				winningScore = awayScore;
+				losingScore = homeScore;
+			}
+			else {
+				winningTeam = 'home';
+				winningScore = homeScore;
+				losingScore = awayScore;
+			}
+
+			winningMsg = '<p>Congratulations, you won with a score of '+winningScore+'-'+losingScore+'.<p>';
+			losingMsg = '<p>Unfortunately, the '+winningTeam+' team won '+winningScore+'-'+losingScore+'. Better luck next time.<p>';
+
+			//work out whether the away team is the pitching or batting socket
+			if (game.teamOnOffense == winningTeam) { //batting team one
+				gameData.batterSocket.emit('showModalPopup', 'Game Over - You win!', winningMsg, 'Play Again', true);
+				gameData.pitcherSocket.emit('showModalPopup', 'Game Over - You lost.', losingMsg, 'Play Again', true);
+			}
+			else { //pitching team one
+				gameData.pitcherSocket.emit('showModalPopup', 'Game Over - You win!', winningMsg, 'Play Again', true);
+				gameData.batterSocket.emit('showModalPopup', 'Game Over - You lost.', losingMsg, 'Play Again', true);
+			}
+		}
+		else { //when calling this function between innings
+			var title, winningMsg, losingMsg;
+
+			if (awayScore > homeScore) {
+				winningTeam = 'away';
+				winningMsg = 'You are in the lead, '+awayScore+'-'+homeScore+'.';
+				losingMsg = 'You are currently behind, '+awayScore+'-'+homeScore+'.';
+			}
+			else if (awayScore < homeScore) {
+				winningTeam = 'home';
+				winningMsg = 'You are in the lead, '+homeScore+'-'+awayScore+'.';
+				losingMsg = 'You are currently behind, '+homeScore+'-'+awayScore+'.';
+			}
+			else {
+				winningMsg = 'The game is tied '+homeScore+'-'+awayScore+'.';
+				losingMsg = 'The game is tied '+homeScore+'-'+awayScore+'.';
+			}
+			
+			title = (game.teamOnOffense == 'away') ? 'Middle' : 'End';
+			title += ' of inning '+game.currentInning;
+			
+			//work out whether the away team is the pitching or batting socket
+			if (game.teamOnOffense == winningTeam) { //batting team one
+				gameData.batterSocket.emit('showModalPopup', title, '<p>'+winningMsg+' You are now pitching.</p>', 'Continue');
+				gameData.pitcherSocket.emit('showModalPopup', title, '<p>'+losingMsg + ' You are now batting.</p>', 'Continue');
+			}
+			else { //pitching team one
+				gameData.pitcherSocket.emit('showModalPopup', title, '<p>'+winningMsg + ' You are now batting.</p>', 'Continue');
+				gameData.batterSocket.emit('showModalPopup', title, '<p>'+losingMsg + ' You are now pitching.</p>', 'Continue');
+			}
+			
+			//clear the messages per-inning to keep it easy to understand
+			gameData.pitcherSocket.emit('clearMessages');
+			gameData.batterSocket.emit('clearMessages');
+		}
 	}
 }
 global.randomIntBetween = function(low, high) {
@@ -122,12 +200,13 @@ function bindSockets(gamePoolID) {
 			//work out the play outcome
 			game.resultPlay(data.index);
 
-			if (game.gameover === true) {
-				game.finishGame();
-			}
-			
 			gameData.batterSocket.emit('updateGameModel', game);
 			gameData.pitcherSocket.emit('updateGameModel', game);
+			
+			if (game.gameover === true) {
+				sendGameUpdate(gamePoolID);
+				delete gamePool[gamePoolID];
+			}
 		});
 
 		gameData.batterSocket.on('stealBase', function(data) {
@@ -184,8 +263,8 @@ function createGame(socket) {
 			socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
 			socket.emit('updateTeam', playerTeam.location);
 			
-			socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
-			socket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">Your game ID is: <span>'+gameID+'</span></p><p>Waiting for an away team to join...<p>');
+			//socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
+			socket.emit('updateControlCenterMessage', '<p>Your game ID is: <span>'+gameID+'</span></p><p>Waiting for an away team to join...<p>');
 		}
 	});
 }
@@ -207,17 +286,19 @@ function joinGame(socket, gameID) {
 					socket.set('gameID', gameID);
 					socket.set('playerTeam', playerTeam); //not sure if i need this anymore?
 					socket.emit('updateTeam', playerTeam.location);
-					socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
+					//socket.emit('displayMessage', { type: '', text: 'You are the '+playerTeam.location+' team' });
 					//When both teams are ready, send a message to both players that we can proceed, assign the roles (pitcher/batter) and start the game (playBall)
+					
+					sendGameUpdate(gameID);
 					playBall(gameID);
 				}
 				else {
-					socket.emit('showModalPopup', '<p>The game ID, '+gameID+', already has both teams playing.</p><p>Check your game ID or start a new game.</p>');
+					socket.emit('showModalPopup', 'Invalid game ID', '<p>The game ID, '+gameID+', already has both teams playing.</p><p>Check your game ID or start a new game.</p>', 'OK');
 				}
 			}
 			else {
 				//If the game doesn't exist, error and send back to start a new game
-				socket.emit('showModalPopup', '<p>The game ID<span>'+gameID+'</span> does not exist.</p><p>Start a new game.</p>');
+				socket.emit('showModalPopup', 'Invalid game ID', '<p>The game ID <strong>'+gameID+'</strong> does not exist.</p><p>Start a new game.</p>', 'OK');
 			}
 		}
 	});
@@ -227,17 +308,19 @@ function closeConnection(leavingTeam, gamePoolID) {
 	if (gamePoolID in gamePool) {
 		var gameData = gamePool[gamePoolID];
 		var game = gameData.game;
-		game.gameover = true;
 		
 		delete gamePool[gamePoolID];
 		
-		if (gameData.pitcherSocket !== undefined) {
-			gameData.pitcherSocket.emit('updateGameModel', game);
-			gameData.pitcherSocket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">The '+leavingTeam+' team has disconnected. You win!<p>');
-		}
-		if (gameData.batterSocket !== undefined) {
-			gameData.batterSocket.emit('updateGameModel', game);
-			gameData.batterSocket.emit('updateControlCenterMessage', '<p style="margin-top:35px;">The '+leavingTeam+' team has disconnected. You win!<p>');
+		if (game.gameover == false) {
+			game.gameover = true;
+			if (gameData.pitcherSocket !== undefined) {
+				gameData.pitcherSocket.emit('updateGameModel', game);
+				gameData.pitcherSocket.emit('showModalPopup', 'Game Over - You win!', '<p>The '+leavingTeam+' team has disconnected.<p>', 'Play Again', true);
+			}
+			if (gameData.batterSocket !== undefined) {
+				gameData.batterSocket.emit('updateGameModel', game);
+				gameData.batterSocket.emit('showModalPopup', 'Game Over - You win!', '<p>The '+leavingTeam+' team has disconnected.<p>', 'Play Again', true);
+			}
 		}
     }
 }

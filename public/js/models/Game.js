@@ -9,6 +9,7 @@ Array.prototype.sum = function() {
 function Game() {
 	this.gamePoolID;
 	
+	this.gameStarted = false;
 	this.gameover = false;
     
 	this.bases = [0,0,0];
@@ -38,7 +39,8 @@ function Game() {
 Game.prototype = {
 	constructor: Game,
     playBall: function() { //this will only be run once per game
-        displayMessage('', '==========PLAY BALL!==========', this.gamePoolID);
+		this.gameStarted = true;
+        //displayMessage('', '==========PLAY BALL!==========', this.gamePoolID);
         this.homeTeam.deck.shuffleCards();
         this.awayTeam.deck.shuffleCards();
         this.loadPitcherCards();
@@ -216,6 +218,7 @@ Game.prototype = {
 					this.gameover = true;
 				}
 				else {
+					sendGameUpdate(this.gamePoolID);
 					this.teamOnOffense = 'home';
 					this.batterDeck = this.homeTeam.deck;
 					this.pitcherDeck = this.awayTeam.deck;
@@ -230,6 +233,7 @@ Game.prototype = {
 				}
 				
 				if (this.currentInning < numberOfInnings) {
+					sendGameUpdate(this.gamePoolID);
 					this.currentInning++;
 					this.teamOnOffense = 'away';
 					this.batterDeck = this.awayTeam.deck;
@@ -241,16 +245,22 @@ Game.prototype = {
 				break;
 		}
 		
-		displayMessage('notice', 'The side is retired.', this.gamePoolID);
-		displayMessage('notice', '==========CHANGE INNING==========', this.gamePoolID);
-		this.outs = 0;
-		this.clearBases();
-		this.pitcherCard = 0;
-		this.batterCard = 0;
+		//now, after all that, if the game is over we do not clear and switch sockets etc
+		if (this.gameover == false) {
+			//displayMessage('notice', 'The side is retired.', this.gamePoolID);
+			//displayMessage('notice', '===CHANGE INNING===', this.gamePoolID);
+			this.outs = 0;
+			this.clearBases();
+			this.pitcherCard = 0;
+			this.batterCard = 0;
 
-        this.loadPitcherCards(); //get 3 cards for the pitcher to select from
-        this.loadBatterCards(true);
-		switchSockets(this.gamePoolID);
+			this.loadPitcherCards(); //get 3 cards for the pitcher to select from
+			this.loadBatterCards(true);
+			switchSockets(this.gamePoolID);
+		}
+		else {
+			sendGameUpdate(this.gamePoolID); //send this to alert the game over
+		}
 	},
 	clearBases: function() {
 		this.bases = [0,0,0];
@@ -277,9 +287,21 @@ Game.prototype = {
 	resultPlay: function(index) { //index is used to determine which batter card was selected (maybe need to change this to include pitcher at some point...)
 		var playDifference = this.pitcherCard.value - this.batterCard.value; //if <= 0 then batter wins duel
 
-		//move the batter's card back into the hand (the pitchers is moved from their selections in the server level
-		this.batterDeck.addCardToHand(this.batterSelections[this.outs].splice(index, 1)[0]);
-
+		//move the batter's card back into the hand (the pitchers is moved from their selections in the server level 
+		var selectedCard = this.batterSelections[this.outs].splice(index, 1)[0];
+		this.batterDeck.addCardToHand(selectedCard);
+		//also, need to remove this from the drawncards pile, otherwise we could end up with too many cards...
+		//loop through all cards in the hand and check if they match the value and suit of the selected card, if it does, remove it from the array and break the loop
+		for (i=0; i<=this.batterDeck.drawnCards.length; i++) {
+			drawnCard = this.batterDeck.drawnCards[i];
+			if (drawnCard === selectedCard) {
+				this.batterDeck.drawnCards.splice(i, 1);
+				break;
+			}
+		}
+		
+		//playDifference = -3; USE FOR TESTING
+		
 		if (playDifference < 0) { //base hit
 			displayMessage('', 'Pitcher: ' + this.pitcherCard.value + ', Batter: ' + this.batterCard.value + ' (Batter wins)', this.gamePoolID);
 			
@@ -405,27 +427,6 @@ Game.prototype = {
 			this.addOut();
 			return 'strikeout'; // 1, 2, 3
 		}
-	},
-	finishGame: function() {
-		displayMessage('', '==========GAME OVER==========', this.gamePoolID);
-		
-		var winningTeam = '';
-		var awayScore = this.scores.away.sum();
-		var homeScore = this.scores.home.sum();
-			
-		if (awayScore > homeScore) {
-			winningTeam = 'away';
-			winningScore = awayScore;
-			losingScore = homeScore;
-		}
-		else {
-			winningTeam = 'home';
-			winningScore = homeScore;
-			losingScore = awayScore;
-		}
-		
-		var plural = (winningScore > 1) ? 's' : '';
-		displayMessage('', 'And that is all she wrote. The '+winningTeam+' team edge this one with '+winningScore+' run'+plural+' to '+losingScore, this.gamePoolID);
 	}
 };
 

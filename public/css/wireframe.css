@@ -20,7 +20,7 @@ html, body {
 
 #controlCenter {
 	border:1px solid #000;
-	width:300px;
+	width:320px;
 	height:auto;
 	padding:25px;
 	position:fixed;
@@ -90,6 +90,7 @@ html, body {
 #modalContent button {
 	display: block;
 	margin: 20px auto 0;
+	width:150px;
 }
 #overlay {
     position: fixed;
@@ -127,6 +128,11 @@ html, body {
 	position:absolute;
 	top:0px;
 	right:0px;
+}
+#messageBox h3 {
+	text-align:center;
+	padding:10px;
+	border-bottom: 1px solid #000;
 }
 #messageBox p {
 	color:#333;
@@ -242,7 +248,8 @@ html, body {
 	width:24px;
 	height:24px;
 	font-size:0;
-	background-color:red;
+	border: 1px solid #000;
+	background-color:#fff;
 }
 #diamond .base#first { top: -12px; right: 0; }
 #diamond .base#second { top: -12px; left: -12px; }

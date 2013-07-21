@@ -9,7 +9,7 @@
     </head>
     <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
-			<section id="controlCenter" ng-class="{ hidden : game.gameover != null }">
+			<section id="controlCenter" ng-if="game.gameover == null || game.awayTeam == null">
 				<button type="button" class="button" ng-click="createGame()">Create a new game</button>
 				<p>or</p>
 				<input type="phone" id="gameID" placeholder="Game ID" maxlength="5" />
@@ -20,13 +20,15 @@
 				<div id="modalContent">
 					<h3>{{modal.title}}</h3>
 					<section ng-bind-html-unsafe="modal.message"></section>
-					<button type="button" class="button" ng-click="closeModalPopup()">OK</button>
+					
+					<button type="button" class="button" ng-if="modal.restartButton == false" ng-click="closeModalPopup()">{{modal.button}}</button>
+					<button type="button" class="button" ng-if="modal.restartButton == true" ng-click="restartGame()">{{modal.button}}</button>
 				</div>
 			</div>
-			<div id="overlay" ng-click="closeModalPopup()"></div>
+			<div id="overlay"></div>
 		
-			<section id="board" ng-class="{ hidden : game == null}">
-				<section id="field" style="display:none;">
+			<section id="board" ng-if="game != null">
+				<section id="field">
 					<section id="dirt" class="sand"></section>
 					<section id="diamond">
 						<section id="first" ng-class="{ hasRunner : game.bases[0] == 1}" class="base">1</section>
@@ -34,19 +36,17 @@
 						<section id="third" ng-class="{ hasRunner : game.bases[2] == 1}" class="base">3</section>
 						<section id="homePlate" class="base hasRunner">4</section>
 						<section id="mound" class="sand"><section id="rubber"></section></section>
-   
-						<span ng-switch on="myRole">
-							<section ng-switch-when="batter">
-								<button type="button" id="stealSecond" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 0 }" class="button stealButton" ng-click="stealBase(2)">Steal 2nd</button>
-								<button type="button" id="stealThird" ng-class="{ visible : game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(3)">Steal 3rd</button>
-								<button type="button" id="stealSecondAndThird" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(5)">Double Steal (2nd &amp; 3rd)</button>
-								<button type="button" id="stealHome" ng-class="{ visible : game.bases[2] == 1 }" class="button stealButton" ng-click="stealBase(4)">Steal Home</button>
-							</section>
-						</span>
+						
+						<section ng-if="myRole == 'batter' && !game.pitcherReady">
+							<button type="button" id="stealSecond" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 0 }" class="button stealButton" ng-click="stealBase(2)">Steal 2nd</button>
+							<button type="button" id="stealThird" ng-class="{ visible : game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(3)">Steal 3rd</button>
+							<button type="button" id="stealSecondAndThird" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(5)">Double Steal (2nd &amp; 3rd)</button>
+							<button type="button" id="stealHome" ng-class="{ visible : game.bases[2] == 1 }" class="button stealButton" ng-click="stealBase(4)">Steal Home</button>
+						</section>
 					</section>
 				</section>
 
-				<section id="scoreboard" style="display:none;">
+				<section id="scoreboard">
 					<ul id="headers" class="clearfix">
 						<li>1</li>
 						<li>2</li>
@@ -62,13 +62,13 @@
 					
 					<p id="awayTeamLabel" ng-class="{ highlight : myTeam == 'away' }" class="left">Visitor</p>
 					<ul id="visitor" class="clearfix">
-						<li ng-repeat="score in game.scores.away">{{score}}</li>
+						<li ng-repeat="(key, score) in (game.scores.away) track by $id(key)">{{score}}</li>
 						<li>{{game.scores.away.sum()}}</li>
 					</ul>
 
 					<p id="homeTeamLabel" ng-class="{ highlight : myTeam == 'home' }" class="left">Home</p>
 					<ul id="home" class="clearfix">
-						<li ng-repeat="score in game.scores.home">{{score}}</li>
+						<li ng-repeat="(key, score) in (game.scores.home) track by $id(key)">{{score}}</li>
 						<li>{{game.scores.home.sum()}}</li>
 					</ul>
 
@@ -99,13 +99,13 @@
 					<li id="batterCard" class="right"><section class="card">{{game.batterCard.value}}</section></li>
 				</ul>
 				
-				<section id="messageBox" scroll-glue><p ng-repeat="msg in messages" ng-class="msg.type">{{msg.text}}</p></section>
+				<section id="messageBox" scroll-glue><h3>Plays this half-inning</h3><p ng-repeat="msg in messages" ng-class="msg.type">{{msg.text}}</p></section>
 			</section>
 		</section>
-
+		
 		<script src="/js/common.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 		<script src="/js/modules/ScrollGlue.js"></script>
 		
 
@@ -114,17 +114,10 @@
 			/*
 			 * TODO
 			 *
-			 * have removed the changing of the controlcenter text (when starting a new game). need to fix that.
-			 * IN GAME: When waiting for batter, display that to the pitcher so they know what to expect
-			 * IN GAME: doesn't display when the team wins - show a different box for when the team wins, but not hiding the board - and when click OK, hide every interaction peice and add a button to start again
-			 *
-			 * Wireframe the rest of the site - Home, How to play, Play a game, The future, Contact
-			 * look into seperating the socket factory stuff below into a seperate file
-			 * Host up on nodejitsu/amazon - and see if we can get the game to work!
-			 *
-			 * improve the graphics - add popups etc
 			 * add the tutorial popup to the game board
-			 * Create the rest of the website - which will have a tutorial etc
+			 * change the graphics - stop using the wireframe.css
+			 * Wireframe the rest of the site - Home, How to play, Play a game, The future / Suggestions, Contact
+			 * Host up on nodejitsu/amazon - and see if we can get the game to work!
 			 *
 			 * Allow the user to name their team for the game (and colour of deck/playing pieces)
 			 * Slow the game down a bit - decisions seem to be too fast
