@@ -15,17 +15,19 @@
 				<input type="phone" id="gameID" placeholder="Game ID" maxlength="5" />
 				<button type="button" class="button" ng-click="joinGame()">Join an existing game</button>
 			</section>
-			
-			<div id="modalPopup" ng-class="{ show : modal.show == true }">
-				<div id="modalContent">
-					<h3>{{modal.title}}</h3>
-					<section ng-bind-html-unsafe="modal.message"></section>
-					
-					<button type="button" class="button" ng-if="modal.restartButton == false" ng-click="closeModalPopup()">{{modal.button}}</button>
-					<button type="button" class="button" ng-if="modal.restartButton == true" ng-click="restartGame()">{{modal.button}}</button>
-				</div>
-			</div>
-			<div id="overlay"></div>
+			<section id="modalPopup" ng-class="{ show : modal.show == true }">
+				<section id="modalContent" ng-switch on="modal.showHelp">
+					<section ng-switch-when="false">
+						<h3>{{modal.title}}</h3>
+						<section ng-bind-html-unsafe="modal.message"></section>
+						
+						<button type="button" class="button" ng-if="modal.restartButton == false" ng-click="closeModalPopup()">{{modal.button}}</button>
+						<button type="button" class="button" ng-if="modal.restartButton == true" ng-click="restartGame()">{{modal.button}}</button>
+					</section>
+					<section ng-switch-when="true" ng-include="'/partials/tutorial.html'"></section>
+				</section>
+			</section>
+			<section id="overlay"></section>
 		
 			<section id="board" ng-if="game != null">
 				<section id="field">
@@ -99,7 +101,16 @@
 					<li id="batterCard" class="right"><section class="card">{{game.batterCard.value}}</section></li>
 				</ul>
 				
-				<section id="messageBox" scroll-glue><h3>Plays this half-inning</h3><p ng-repeat="msg in messages" ng-class="msg.type">{{msg.text}}</p></section>
+				<section id="messageBox">
+					<h3>Plays this half-inning</h3>
+					<section id="messages" scroll-glue>
+						<p ng-repeat="msg in messages" ng-class="msg.type">{{msg.text}}</p>
+					</section>
+					<ul id="toolbar" class="clearfix">
+						<li><a ng-click="showHelp()" class="jsButton" title="Learn how to play">?</a></li>
+						<li><a ng-click="quitGame()" class="jsButton" title="Exit the game">X</a></li>
+					</ul>
+				</section>
 			</section>
 		</section>
 		
@@ -108,22 +119,22 @@
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 		<script src="/js/modules/ScrollGlue.js"></script>
 		
-
 		<script src="/js/controllers/GameController.js"></script>
 		<script>
 			/*
 			 * TODO
 			 *
-			 * add the tutorial popup to the game board
+			 * Allow the user to name their team for the game
+			 * Add the ability for users to roll their own dice
+			 * look into logging what happens - useful for tracking purposes (how many games etc)
+			 * Add in-game chatting (filter expletatives)
 			 * change the graphics - stop using the wireframe.css
 			 * Wireframe the rest of the site - Home, How to play, Play a game, The future / Suggestions, Contact
 			 * Host up on nodejitsu/amazon - and see if we can get the game to work!
 			 *
-			 * Allow the user to name their team for the game (and colour of deck/playing pieces)
-			 * Slow the game down a bit - decisions seem to be too fast
 			 * Add a span to represent the runner on base - animate them when they score
 			 * Add a span to represent the ball and animate it to where it goes on the play
-			 * Add the ability for users to roll their own dice
+			 * Slow the game down a bit - decisions seem to be too fast
 			 * Store the team in a database in the backend - show standings based on player locality (UK, USA, Kent UK leagues etc)
 			 *
 			 */

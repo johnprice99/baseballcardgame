@@ -1,14 +1,5 @@
 function GameCtrl($scope, socket) {
-	$scope.messages = [];
-	$scope.modal = {
-		"title" : "",
-		"message" : "",
-		"button" : "",
-		"restartButton" : false,
-		"show" : false
-	};
-	$scope.clearMessageOnModalClose = false;
-	
+
 	socket.on('showModalPopup', function (title, message, button, restartButton) {
 		$scope.alert(title, message, button, restartButton);
 	});
@@ -91,6 +82,17 @@ function GameCtrl($scope, socket) {
 	
 	/* --- Modal popup code --- */
 	
+	$scope.messages = [];
+	$scope.modal = {
+		"title" : "",
+		"message" : "",
+		"button" : "",
+		"restartButton" : false,
+		"show" : false,
+		"showHelp" : false
+	};
+	$scope.clearMessageOnModalClose = false;
+	
 	$scope.alert = function(title, message, button, restartButton) {
 		if (restartButton === undefined) {
 			restartButton = false;
@@ -101,7 +103,8 @@ function GameCtrl($scope, socket) {
 			"message" : message,
 			"button" : button,
 			"restartButton" : restartButton,
-			"show" : true
+			"show" : true,
+			"showHelp" : false
 		};
 	};
 	
@@ -112,4 +115,29 @@ function GameCtrl($scope, socket) {
 			$scope.clearMessageOnModalClose = false;
 		}
 	};
+	
+	$scope.showHelp = function() {
+		$scope.modal = {
+			"show" : true,
+			"showHelp" : true
+		};
+	}
+	
+	/* --- Tutorial slider --- */
+	
+	$scope.tutorialSlide = 1;
+	
+	$scope.slideToSlide = function(slideNumber) {
+		$scope.slideDirection = (slideNumber > $scope.tutorialSlide) ? 'right' : 'left';
+		$scope.tutorialSlide = slideNumber;		
+	}
+	$scope.nextSlide = function() {
+		$scope.tutorialSlide += 1;
+		$scope.slideDirection = 'right';
+	}
+	$scope.prevSlide = function() {
+		$scope.tutorialSlide -= 1;
+		$scope.slideDirection = 'left';
+	}
+	
 }
