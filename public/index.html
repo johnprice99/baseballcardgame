@@ -4,8 +4,8 @@
         <meta charset="UTF-8" />
         <title>BBCG</title>
 
-		<link rel="stylesheet" href="/css/wireframe.css" />
-		<!--link rel="stylesheet" href="/css/main.css" /-->
+		<!--link rel="stylesheet" href="/css/wireframe.css" /-->
+		<link rel="stylesheet" href="/css/main.css" />
     </head>
     <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
@@ -20,7 +20,7 @@
 					<section ng-switch-when="false">
 						<h3>{{modal.title}}</h3>
 						<section ng-bind-html-unsafe="modal.message"></section>
-						
+
 						<button type="button" class="button" ng-if="modal.restartButton == false" ng-click="closeModalPopup()">{{modal.button}}</button>
 						<button type="button" class="button" ng-if="modal.restartButton == true" ng-click="restartGame()">{{modal.button}}</button>
 					</section>
@@ -28,7 +28,7 @@
 				</section>
 			</section>
 			<section id="overlay"></section>
-		
+
 			<section id="board" ng-if="game != null">
 				<section id="field">
 					<section id="dirt" class="sand"></section>
@@ -38,7 +38,7 @@
 						<section id="third" ng-class="{ hasRunner : game.bases[2] == 1}" class="base">3</section>
 						<section id="homePlate" class="base hasRunner">4</section>
 						<section id="mound" class="sand"><section id="rubber"></section></section>
-						
+
 						<section ng-if="myRole == 'batter' && !game.pitcherReady">
 							<button type="button" id="stealSecond" ng-class="{ visible : game.bases[0] == 1 && game.bases[1] == 0 }" class="button stealButton" ng-click="stealBase(2)">Steal 2nd</button>
 							<button type="button" id="stealThird" ng-class="{ visible : game.bases[1] == 1 && game.bases[2] == 0 }" class="button stealButton" ng-click="stealBase(3)">Steal 3rd</button>
@@ -61,7 +61,7 @@
 						<li>9</li>
 						<li>R</li>
 					</ul>
-					
+
 					<p id="awayTeamLabel" ng-class="{ highlight : myTeam == 'away' }" class="left">Visitor</p>
 					<ul id="visitor" class="clearfix">
 						<li ng-repeat="(key, score) in (game.scores.away) track by $id(key)">{{score}}</li>
@@ -100,7 +100,7 @@
 					<li id="pitcherCard" class="left"><section class="card">{{game.pitcherCard.value}}</section></li>
 					<li id="batterCard" class="right"><section class="card">{{game.batterCard.value}}</section></li>
 				</ul>
-				
+
 				<section id="messageBox">
 					<h3>Plays this half-inning</h3>
 					<section id="messages" scroll-glue>
@@ -113,12 +113,12 @@
 				</section>
 			</section>
 		</section>
-		
+
 		<script src="/js/common.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
 		<script src="/js/modules/ScrollGlue.js"></script>
-		
+
 		<script src="/js/controllers/GameController.js"></script>
 		<script>
 			/*
@@ -138,7 +138,7 @@
 			 * Store the team in a database in the backend - show standings based on player locality (UK, USA, Kent UK leagues etc)
 			 *
 			 */
-			var socket = io.connect('http://bbcg.local:1337');
+			var socket = io.connect('http://172.16.14.124:1337');
 			var app = angular.module('bbcgApp', ['ScrollGlue']);
 		</script>
 		<script src="/js/services/SocketService.js"></script>
