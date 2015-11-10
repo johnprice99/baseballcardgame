@@ -1,0 +1,25 @@
+{
+  "name": "baseballcardgame",
+  "version": "1.0.0",
+  "description": "baseballcardgame ================",
+  "main": "server.js",
+  "dependencies": {
+    "express": "3.2.6",
+    "socket.io": "0.9.16"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnprice99/baseballcardgame.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johnprice99/baseballcardgame/issues"
+  },
+  "homepage": "https://github.com/johnprice99/baseballcardgame#readme"
+}

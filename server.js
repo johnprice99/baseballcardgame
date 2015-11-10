@@ -11,7 +11,7 @@ var Player = require('./public/js/models/Player.js');
 var Game = require('./public/js/models/Game.js');
 
 server.listen(1337);
-console.log('listening to port 1337 (use bbcg.local - NOT localhost!!!)');
+console.log('listening to port 1337');
 
 app.use(express.static(__dirname + '/public'));
 
