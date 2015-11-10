@@ -4,8 +4,8 @@
         <meta charset="UTF-8" />
         <title>BBCG</title>
 
-		<!--link rel="stylesheet" href="/css/wireframe.css" /-->
-		<link rel="stylesheet" href="/css/main.css" />
+		<!--<link rel="stylesheet" href="/bbcg/css/wireframe.css" />-->
+		<link rel="stylesheet" href="/bbcg/css/main.css" />
     </head>
     <body ng-controller="GameCtrl" ng-cloak>
 		<section id="container">
@@ -114,12 +114,12 @@
 			</section>
 		</section>
 
-		<script src="/js/common.js"></script>
+		<script src="/bbcg/js/common.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
-		<script src="/js/modules/ScrollGlue.js"></script>
+		<script src="/bbcg/js/lib/angular.min.js"></script>
+		<script src="/bbcg/js/modules/ScrollGlue.js"></script>
 
-		<script src="/js/controllers/GameController.js"></script>
+		<script src="/bbcg/js/controllers/GameController.js"></script>
 		<script>
 			/*
 			 * TODO
@@ -141,6 +141,6 @@
 			var socket = io.connect('http://172.16.14.124:1337');
 			var app = angular.module('bbcgApp', ['ScrollGlue']);
 		</script>
-		<script src="/js/services/SocketService.js"></script>
+		<script src="/bbcg/js/services/SocketService.js"></script>
     </body>
 </html>

@@ -10,10 +10,17 @@ io.set('log level', 1); // reduce logging
 var Player = require('./public/js/models/Player.js');
 var Game = require('./public/js/models/Game.js');
 
-server.listen(1337);
-console.log('listening to port 1337');
+//Required to get the app running on live
+if (typeof(PhusionPassenger) != 'undefined') {
+	console.log('BBCG listening with passenger');
+	server.listen('passenger');
+}
+else {
+	console.log('BBCG listening with 1337');
+	server.listen(1337);
+}
 
-app.use(express.static(__dirname + '/public'));
+app.use('/bbcg', express.static(__dirname + '/public'));
 
 var gamePool = {};
 
