@@ -17,7 +17,7 @@ if (typeof(PhusionPassenger) != 'undefined') {
 }
 else {
 	console.log('BBCG listening with 1337');
-	server.listen(1337);
+	server.listen(process.env.PORT || 1337);
 }
 
 app.use('/bbcg', express.static(__dirname + '/public'));
