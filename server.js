@@ -16,11 +16,11 @@ if (typeof(PhusionPassenger) != 'undefined') {
 	server.listen('passenger');
 }
 else {
-	console.log('BBCG listening with 1337');
+	console.log('BBCG listening');
 	server.listen(process.env.PORT || 1337);
 }
 
-app.use('/bbcg', express.static(__dirname + '/public'));
+app.use('/', express.static(__dirname + '/public'));
 
 var gamePool = {};
 
